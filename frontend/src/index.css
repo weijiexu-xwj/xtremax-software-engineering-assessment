@@ -1,0 +1,4 @@
+:focus { outline: 2px solid #36f }
+body { font-family: system-ui, Arial, sans-serif; margin: 0; }
+button { cursor: pointer }
+textarea { width: 100%; min-height: 80px }
