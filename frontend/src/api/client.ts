@@ -1,4 +1,4 @@
-import { ApplicationReviewDTO, RevisionComparisonDTO, FeedbackDTO, CommentTemplateDTO, RevisionDTO, AuditEntryDTO, NotificationDTO } from '../types'
+import { ApplicationListItemDTO, ApplicationReviewDTO, RevisionComparisonDTO, FeedbackDTO, CommentTemplateDTO, RevisionDTO, AuditEntryDTO, NotificationDTO } from '../types'
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL as string)
 
@@ -8,6 +8,10 @@ async function fetchJson<T>(url: string, opts?: RequestInit): Promise<T> {
   if (res.status === 409) throw new Error('CONFLICT')
   if (!res.ok) throw new Error('SERVER_ERROR')
   return await res.json() as T
+}
+
+export async function listApplications(): Promise<ApplicationListItemDTO[]> {
+  return fetchJson<ApplicationListItemDTO[]>(`${API_BASE}/applications/list`)
 }
 
 export async function getApplicationReview(applicationId: string): Promise<ApplicationReviewDTO> {

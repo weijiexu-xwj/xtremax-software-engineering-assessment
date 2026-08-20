@@ -94,6 +94,13 @@ public class ApplicationsController {
         return ResponseEntity.ok(m);
     }
 
+    @GetMapping("/list")
+    public List<ApplicationListItemDTO> listApplications() {
+        return applicationRepository.findAll().stream()
+                .map(app -> new ApplicationListItemDTO(app.getId(), app.getReferenceNumber()))
+                .collect(Collectors.toList());
+    }
+
     @GetMapping
     public ResponseEntity<Map<String,Object>> getApplicationsHealth() {
         Map<String,Object> m = new LinkedHashMap<>();

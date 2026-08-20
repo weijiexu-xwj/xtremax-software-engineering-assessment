@@ -1,5 +1,6 @@
 export type UUID = string
 
+export interface ApplicationListItemDTO { id: UUID; referenceNumber: string }
 export interface FieldDTO { key: string; value: string }
 export interface AIVerificationDTO { id: UUID; passed: boolean; details?: string; checkedAt?: string }
 export interface DocumentDTO { id: UUID; key: string; filename: string; aiResult?: AIVerificationDTO }

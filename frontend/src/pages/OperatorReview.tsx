@@ -14,13 +14,12 @@ const ACTION_REQUIRED_STATUSES = new Set([
   'Pending Approval',
 ])
 
-export default function OperatorReview(){
-  const [appId] = useState<string>(() => '11111111-1111-1111-1111-111111111111')
+export default function OperatorReview({ appId }: { appId: string }){
   const [data, setData] = useState<ApplicationReviewDTO | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(()=>{ void load() }, [])
+  useEffect(()=>{ void load() }, [appId])
 
   async function load(){
     setLoading(true); setError(null)

@@ -5,8 +5,7 @@ import { ApplicationReviewDTO, RevisionDTO, FeedbackDTO, CommentTemplateDTO, Rev
 function Loading(){ return <div>Loading…</div> }
 function ErrorMessage({message}:{message:string}){ return <div role="alert" style={{color:'crimson'}}>{message}</div> }
 
-export default function OfficerReview(){
-  const [appId] = useState<string>(() => '11111111-1111-1111-1111-111111111111') // placeholder; replace with routing param
+export default function OfficerReview({ appId }: { appId: string }){
   const [data, setData] = useState<ApplicationReviewDTO | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -14,7 +13,7 @@ export default function OfficerReview(){
   const [revisions, setRevisions] = useState<RevisionDTO[]>([])
   const [compareResult, setCompareResult] = useState<RevisionComparisonDTO | null>(null)
 
-  useEffect(()=>{ load() ; loadTemplates(); loadRevisions() }, [])
+  useEffect(()=>{ load() ; loadTemplates(); loadRevisions() }, [appId])
 
   async function load(){
     setLoading(true); setError(null)
