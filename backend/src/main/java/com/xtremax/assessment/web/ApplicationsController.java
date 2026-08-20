@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -21,15 +23,18 @@ public class ApplicationsController {
     private final FeedbackItemRepository feedbackRepo;
     private final ApplicationRevisionRepository revisionRepo;
     private final CommentTemplateRepository templateRepo;
+    private final com.xtremax.assessment.repository.ApplicationRepository applicationRepository;
 
     public ApplicationsController(OfficerReviewService service,
                                   FeedbackItemRepository feedbackRepo,
                                   ApplicationRevisionRepository revisionRepo,
-                                  CommentTemplateRepository templateRepo) {
+                                  CommentTemplateRepository templateRepo,
+                                  com.xtremax.assessment.repository.ApplicationRepository applicationRepository) {
         this.service = service;
         this.feedbackRepo = feedbackRepo;
         this.revisionRepo = revisionRepo;
         this.templateRepo = templateRepo;
+        this.applicationRepository = applicationRepository;
     }
 
     @GetMapping("/{applicationId}/review")
@@ -78,6 +83,31 @@ public class ApplicationsController {
     @GetMapping("/{applicationId}/notifications")
     public List<NotificationDTO> getNotifications(@PathVariable UUID applicationId) {
         return service.getApplicationNotifications(applicationId).stream().map(ApiMapper::toNotificationDTO).collect(Collectors.toList());
+    }
+
+    @PostMapping
+    public ResponseEntity<Map<String,Object>> pingApplications() {
+        Map<String,Object> m = new LinkedHashMap<>();
+        m.put("status", "ok");
+        m.put("path", "/api/applications");
+        m.put("message", "Applications API is available");
+        return ResponseEntity.ok(m);
+    }
+
+    @GetMapping
+    public ResponseEntity<Map<String,Object>> getApplicationsHealth() {
+        Map<String,Object> m = new LinkedHashMap<>();
+        m.put("status", "ok");
+        m.put("path", "/api/applications");
+        try {
+            long count = applicationRepository.count();
+            m.put("applicationCount", count);
+        } catch (Exception ex) {
+            m.put("applicationCount", null);
+            m.put("warning", "unable to query application count: " + ex.getMessage());
+        }
+        m.put("message", "Applications API is available");
+        return ResponseEntity.ok(m);
     }
 
     private UUID findRevisionIdForLatest(UUID applicationId) {
