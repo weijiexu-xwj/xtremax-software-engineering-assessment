@@ -32,6 +32,9 @@ public class FeedbackItem {
     @Enumerated(EnumType.STRING)
     private FeedbackStatus status = FeedbackStatus.OPEN;
 
+    private String resolvedBy;
+    private Instant resolvedAt;
+
     private Instant createdAt = Instant.now();
     private Instant updatedAt = Instant.now();
 
@@ -63,6 +66,19 @@ public class FeedbackItem {
 
     public void setStatus(FeedbackStatus status) {
         this.status = status;
+        this.updatedAt = Instant.now();
+    }
+
+    public String getResolvedBy() { return resolvedBy; }
+    public Instant getResolvedAt() { return resolvedAt; }
+
+    public void resolve(String resolvedBy) {
+        if (this.status == FeedbackStatus.RESOLVED || this.status == FeedbackStatus.ADDRESSED || this.status == FeedbackStatus.DISMISSED) {
+            throw new IllegalStateException("Feedback is already resolved.");
+        }
+        this.status = FeedbackStatus.RESOLVED;
+        this.resolvedBy = resolvedBy;
+        this.resolvedAt = Instant.now();
         this.updatedAt = Instant.now();
     }
 }

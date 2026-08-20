@@ -5,10 +5,13 @@ import jakarta.validation.constraints.NotBlank;
 import java.time.Instant;
 import java.util.*;
 
+import org.hibernate.annotations.Proxy;
+
 @Entity
+@Proxy(lazy = false)
 @Table(
-    uniqueConstraints = @UniqueConstraint(name = "uk_application_revision", columnNames = {"application_id","revisionNumber"}),
-    indexes = {@Index(name = "idx_revision_application", columnList = "application_id")}
+   uniqueConstraints = @UniqueConstraint(name = "uk_application_revision", columnNames = {"application_id","revisionNumber"}),
+   indexes = {@Index(name = "idx_revision_application", columnList = "application_id")}
 )
 public class ApplicationRevision {
     @Id

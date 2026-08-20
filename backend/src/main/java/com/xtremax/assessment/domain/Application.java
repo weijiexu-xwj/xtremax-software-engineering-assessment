@@ -51,6 +51,9 @@ public class Application {
     public List<Notification> getNotifications() { return Collections.unmodifiableList(notifications); }
     public Instant getCreatedAt() { return createdAt; }
 
+    public void addNotification(Notification notification) { this.notifications.add(notification); }
+    public void addAuditEntry(AuditEntry auditEntry) { this.auditEntries.add(auditEntry); }
+
     public ApplicationRevision createNewRevision(String createdBy) {
         int next = revisions.stream().mapToInt(ApplicationRevision::getRevisionNumber).max().orElse(0) + 1;
         revisions.forEach(ApplicationRevision::lock);
