@@ -50,6 +50,18 @@ public class DomainModelTests {
     }
 
     @Test
+    public void statusChangeCreatesAuditAndNotification() {
+        Application a = new Application("REF-STATUS");
+        Notification notification = a.changeStatus(ApplicationStatus.UNDER_REVIEW, "officer", "Please complete the site details");
+
+        assertEquals(ApplicationStatus.UNDER_REVIEW, a.getCurrentStatus());
+        assertEquals(1, a.getNotifications().size());
+        assertEquals("Please complete the site details", notification.getMessage());
+        assertEquals(1, a.getAuditEntries().size());
+        assertEquals("APPLICATION_STATUS_CHANGED", a.getAuditEntries().get(0).getAction());
+    }
+
+    @Test
     public void revisionsAreSequentialAndImmutable() {
         Application a = new Application("REF-SEQ");
         var r1 = a.createNewRevision("alice");
@@ -60,8 +72,10 @@ public class DomainModelTests {
         assertEquals(1, r1.getRevisionNumber());
         assertEquals(2, r2.getRevisionNumber());
         assertEquals(2, a.getRevisions().size());
+        assertTrue(r1.isLocked());
 
-        // Ensure r1 fields unchanged
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> r1.addField("name", "Changed"));
+        assertTrue(ex.getMessage().contains("Cannot modify revision 1"));
         assertEquals("Alice", r1.getFields().get(0).getValue());
     }
 }

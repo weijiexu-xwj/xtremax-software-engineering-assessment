@@ -27,37 +27,53 @@ public class ApplicationRevision {
     @Column(nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
-    @OneToMany(mappedBy = "revision", cascade = CascadeType.ALL, orphanRemoval = true)
-    private final List<ApplicationField> fields = new ArrayList<>();
+   @Column(nullable = false)
+   private boolean locked = false;
 
     @OneToMany(mappedBy = "revision", cascade = CascadeType.ALL, orphanRemoval = true)
-    private final List<ApplicationDocument> documents = new ArrayList<>();
+   private final List<ApplicationField> fields = new ArrayList<>();
 
-    protected ApplicationRevision() {}
+   @OneToMany(mappedBy = "revision", cascade = CascadeType.ALL, orphanRemoval = true)
+   private final List<ApplicationDocument> documents = new ArrayList<>();
 
-    public ApplicationRevision(Application application, int revisionNumber, String createdBy) {
-        this.application = application;
-        this.revisionNumber = revisionNumber;
-        this.createdBy = createdBy;
-    }
+   protected ApplicationRevision() {}
 
-    public UUID getId() { return id; }
-    public Application getApplication() { return application; }
-    public int getRevisionNumber() { return revisionNumber; }
-    public String getCreatedBy() { return createdBy; }
-    public Instant getCreatedAt() { return createdAt; }
-    public List<ApplicationField> getFields() { return Collections.unmodifiableList(fields); }
-    public List<ApplicationDocument> getDocuments() { return Collections.unmodifiableList(documents); }
+   public ApplicationRevision(Application application, int revisionNumber, String createdBy) {
+       this.application = application;
+       this.revisionNumber = revisionNumber;
+       this.createdBy = createdBy;
+   }
 
-    public ApplicationField addField(String key, String value) {
-        ApplicationField f = new ApplicationField(this, key, value);
-        fields.add(f);
-        return f;
-    }
+   public UUID getId() { return id; }
+   public Application getApplication() { return application; }
+   public int getRevisionNumber() { return revisionNumber; }
+   public String getCreatedBy() { return createdBy; }
+   public Instant getCreatedAt() { return createdAt; }
+   public boolean isLocked() { return locked; }
+   public List<ApplicationField> getFields() { return Collections.unmodifiableList(fields); }
+   public List<ApplicationDocument> getDocuments() { return Collections.unmodifiableList(documents); }
 
-    public ApplicationDocument addDocument(String key, String filename) {
-        ApplicationDocument d = new ApplicationDocument(this, key, filename);
-        documents.add(d);
-        return d;
-    }
+   public void lock() {
+       this.locked = true;
+   }
+
+   public ApplicationField addField(String key, String value) {
+       ensureModifiable();
+       ApplicationField f = new ApplicationField(this, key, value);
+       fields.add(f);
+       return f;
+   }
+
+   public ApplicationDocument addDocument(String key, String filename) {
+       ensureModifiable();
+       ApplicationDocument d = new ApplicationDocument(this, key, filename);
+       documents.add(d);
+       return d;
+   }
+
+   private void ensureModifiable() {
+       if (locked) {
+           throw new IllegalStateException("Cannot modify revision " + revisionNumber + " after a newer revision has been created.");
+       }
+   }
 }
