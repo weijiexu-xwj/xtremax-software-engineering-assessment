@@ -39,6 +39,29 @@ public class OfficerReviewService {
                 .orElseThrow(() -> new EntityNotFoundException("Application not found: " + applicationId));
     }
 
+    @Transactional(readOnly = true)
+    public java.util.UUID getLatestRevisionId(UUID applicationId) {
+        Application application = getApplicationForOfficerReview(applicationId);
+        if (application.getRevisions().isEmpty()) {
+            throw new EntityNotFoundException("No revisions for application: " + applicationId);
+        }
+        return application.getRevisions().get(application.getRevisions().size()-1).getId();
+    }
+
+    @Transactional(readOnly = true)
+    public com.xtremax.assessment.web.dto.ApplicationReviewDTO getApplicationReviewDTO(UUID applicationId) {
+        Application app = getApplicationForOfficerReview(applicationId);
+        List<FeedbackItem> feedback = feedbackItemRepository.findByApplicationOrderByCreatedAtAsc(app);
+        return com.xtremax.assessment.web.ApiMapper.toApplicationReview(app, feedback);
+    }
+
+    @Transactional(readOnly = true)
+    public List<com.xtremax.assessment.web.dto.RevisionDTO> listRevisionsDTO(UUID applicationId) {
+        Application app = getApplicationForOfficerReview(applicationId);
+        List<ApplicationRevision> revs = revisionRepository.findByApplicationOrderByRevisionNumberAsc(app);
+        return revs.stream().map(com.xtremax.assessment.web.ApiMapper::toRevisionDTO).collect(Collectors.toList());
+    }
+
     @Transactional
     public FeedbackItem addContextualFeedback(UUID applicationId, UUID revisionId,
                                              FeedbackTargetType targetType,

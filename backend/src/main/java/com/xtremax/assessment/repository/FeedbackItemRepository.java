@@ -12,4 +12,5 @@ import java.util.UUID;
 public interface FeedbackItemRepository extends JpaRepository<FeedbackItem, UUID> {
     List<FeedbackItem> findByApplicationAndStatus(Application application, FeedbackStatus status);
     List<FeedbackItem> findByRevision(ApplicationRevision revision);
+    List<FeedbackItem> findByApplicationOrderByCreatedAtAsc(Application application);
 }
