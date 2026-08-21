@@ -5,6 +5,13 @@ import { ApplicationReviewDTO, RevisionDTO, FeedbackDTO, CommentTemplateDTO, Rev
 function Loading(){ return <div>Loading…</div> }
 function ErrorMessage({message}:{message:string}){ return <div role="alert" style={{color:'crimson'}}>{message}</div> }
 
+export function getRequestInformationErrorMessage(errorMessage?: string) {
+  if (errorMessage === 'CONFLICT') {
+    return 'A pre-site resubmission can only be requested when the application is Under Review and has at least one open feedback item.'
+  }
+  return 'Failed to request information'
+}
+
 export default function OfficerReview({ appId }: { appId: string }){
   const [data, setData] = useState<ApplicationReviewDTO | null>(null)
   const [loading, setLoading] = useState(false)
@@ -57,11 +64,7 @@ export default function OfficerReview({ appId }: { appId: string }){
       await requestInformation(appId, 'officer')
       await load()
     }catch(e:any){
-      if (e?.message === 'CONFLICT') {
-        setError('Conflict: cannot request resubmission')
-      } else {
-        setError('Failed to request information')
-      }
+      setError(getRequestInformationErrorMessage(e?.message))
     }
   }
 

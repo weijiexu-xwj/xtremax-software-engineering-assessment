@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest'
-import { getOperatorStatusLabel } from '../statusLabels'
+import { describe, expect, it } from 'vitest'
 import { getRoute } from '../App'
+import { getOperatorStatusLabel } from '../statusLabels'
 
 describe('OperatorReview', () => {
   it('maps officer status labels to operator labels', () => {
