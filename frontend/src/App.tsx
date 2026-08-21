@@ -46,19 +46,21 @@ export default function App(){
   const appIdExists = appId && appId.trim().length > 0
 
   return (
-    <div>
-      <header style={{padding:12,borderBottom:'1px solid #ddd'}}>
-        <h1>{pageTitle}</h1>
-        <ApplicationSelector onSelect={handleSelectApplication} />
-        <nav style={{marginTop:10, display:'flex', gap:8}}>
-          <button type="button" onClick={() => navigate('officer')}>Officer</button>
-          <button type="button" onClick={() => navigate('operator')}>Operator</button>
-        </nav>
-      </header>
-      <main style={{padding:12}}>
-        {appIdExists && (route === 'operator' ? <OperatorReview appId={appId} /> : <OfficerReview appId={appId} />)}
-        {!appIdExists && <div>Loading application…</div>}
-      </main>
+    <div className="app-shell">
+      <div className="app-surface">
+        <header className="app-header">
+          <h1>{pageTitle}</h1>
+          <ApplicationSelector onSelect={handleSelectApplication} />
+          <nav style={{marginTop:10, display:'flex', gap:8}}>
+            <button type="button" onClick={() => navigate('officer')}>Officer</button>
+            <button type="button" onClick={() => navigate('operator')}>Operator</button>
+          </nav>
+        </header>
+        <main className="app-main">
+          {appIdExists && (route === 'operator' ? <OperatorReview appId={appId} /> : <OfficerReview appId={appId} />)}
+          {!appIdExists && <div>Loading application…</div>}
+        </main>
+      </div>
     </div>
   )
 }

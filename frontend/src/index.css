@@ -1,4 +1,78 @@
 :focus { outline: 2px solid #36f }
-body { font-family: system-ui, Arial, sans-serif; margin: 0; }
+
 button { cursor: pointer }
 textarea { width: 100%; min-height: 80px }
+
+html, body, #root {
+  min-height: 100%;
+}
+
+
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-image: url("/background.png");
+  background-repeat: no-repeat;
+  background-position: top center;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
+#root {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 125px 24px 40px;
+}
+
+.app-shell {
+  min-height: 100vh;
+  background-image: url('/background.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  padding: 12px;
+}
+
+.app-surface {
+  min-height: 100vh;
+  background: transparent;
+}
+
+.app-header,
+.app-main {
+  padding: 12px;
+}
+
+.app-header {
+  max-width: 1200px;
+  margin: 0 auto 12px;
+  border: 1px solid rgba(221, 221, 221, 0.9);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(3px);
+}
+
+.app-header h1 {
+  margin: 0 0 12px;
+}
+
+.app-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+@media (max-width: 768px) {
+  .app-shell {
+    padding: 8px;
+  }
+
+  .app-header,
+  .app-main {
+    padding: 10px;
+  }
+}
