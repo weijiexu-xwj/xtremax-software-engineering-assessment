@@ -52,3 +52,100 @@ There were several broader trade-offs behind my decision:
 One important limitation is that frontend-only validation and error translation improve the user experience but are not a complete enforcement mechanism. In a production system, the backend must remain the source of truth, return structured domain errors, and enforce the same rules regardless of which client calls the API.
 
 In summary, I did not defer Use Cases 1 and 3 because of a value proposition. I deferred them because completing all three would have produced excessive breadth and insufficient depth. The decision reflects how I would approach a real mission-critical system: prioritise the highest-value workflow, protect data integrity, deliver it end to end, and document the remaining capabilities as deliberate next steps.
+
+## Design patterns used in the project
+
+This project uses a small set of practical design patterns that are appropriate for a mission-critical workflow system:
+
+### 1. Layered architecture
+The backend is structured in layers: web controllers, service layer, domain model and repository layer.
+
+Why it is used:
+- keeps responsibilities separate
+- makes it easier to reason about HTTP concerns, business rules and persistence independently
+- reduces coupling between UI/API logic and data logic
+- allows the workflow to evolve without rewriting core business rules
+
+This is visible in the split between `ApplicationsController`, `OfficerReviewService`, domain entities and repository interfaces.
+
+### 2. Domain-driven design (DDD-lite)
+The core business logic sits in the domain model rather than being spread across controllers or UI code.
+
+Why it is used:
+- status transitions and workflow rules are explicitly expressed in the domain
+- it protects business invariants and prevents invalid application states
+- it makes the workflow easier to audit and validate
+
+Examples in the codebase include `Application`, `ApplicationStatus`, and `DomainRules`.
+
+### 3. Repository pattern
+Persistence logic is abstracted behind repository interfaces.
+
+Why it is used:
+- separates the domain from database concerns
+- makes the service layer cleaner and easier to test
+- allows the app to change persistence implementation without changing workflow logic
+
+This pattern is used through repositories such as `ApplicationRepository` and `FeedbackItemRepository`.
+
+### 4. DTO pattern
+The backend exposes purpose-specific DTOs instead of exposing entities directly.
+
+Why it is used:
+- keeps the API contract stable and explicit
+- prevents internal domain objects from being overexposed
+- supports current UI needs without leaking persistence concerns
+
+Examples include `ApplicationReviewDTO`, `RevisionDTO`, and `ApplicationListItemDTO`.
+
+### 5. Service layer / orchestration pattern
+Workflow behaviour is coordinated in service classes rather than in controllers.
+
+Why it is used:
+- controllers stay focused on HTTP concerns
+- business workflow orchestration is centralized
+- actions such as feedback creation, status changes, and notifications are coordinated consistently
+
+`OfficerReviewService` is the main example of this pattern.
+
+### 6. State machine pattern
+Application status transitions are represented as an explicit state model.
+
+Why it is used:
+- the licensing workflow is rules-driven and status-dependent
+- valid progression must be enforced, not guessed by the UI
+- it improves traceability and prevents invalid workflow transitions
+
+This is implemented via `ApplicationStatus` and `DomainRules.isAllowedTransition(...)`.
+
+### 7. Event-style notification pattern
+The system adds audit entries and notifications when important workflow events happen.
+
+Why it is used:
+- supports traceability and accountability
+- makes operational visibility stronger for officers and operators
+- supports a robust compliance and review trail
+
+Examples include notifications sent when status changes or operator resubmission occurs.
+
+### 8. Frontend composition and route-based view pattern
+The React app is split into route-driven page components and reusable UI elements.
+
+Why it is used:
+- allows officer and operator workflows to remain separate while reusing shared data and logic
+- makes the UI easier to maintain and extend
+- clarifies role-specific responsibilities without duplicating all behaviour
+
+This is visible in the `App.tsx` route selection and the `OfficerReview` / `OperatorReview` page components.
+
+### 9. Dependency injection
+Spring Boot uses dependency injection for services, repositories and other collaborators.
+
+Why it is used:
+- reduces tight coupling
+- improves testability
+- supports cleaner component wiring in a production-grade application
+
+This pattern is central to the backend architecture.
+
+Overall, the project uses a pragmatic combination of layered architecture, domain-driven rules, repository abstraction and workflow-driven state management. These patterns are appropriate because the system is not just a CRUD demo; it models a real operational workflow with status transitions, auditability, notifications and role-based decisions.
