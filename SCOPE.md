@@ -149,3 +149,277 @@ Why it is used:
 This pattern is central to the backend architecture.
 
 Overall, the project uses a pragmatic combination of layered architecture, domain-driven rules, repository abstraction and workflow-driven state management. These patterns are appropriate because the system is not just a CRUD demo; it models a real operational workflow with status transitions, auditability, notifications and role-based decisions.
+
+# AI Usage
+
+## Purpose and Objective
+
+AI was used as an engineering assistant to analyse, implement, review and validate **Use Case 2: Officer Application Review and Feedback**. The work was deliberately divided into small, ordered prompts so that each response had a clear responsibility, could be tested independently and built on verified work from the previous stage.
+
+The objective was not to ask AI to generate the entire application in one pass. The approach was to:
+
+1. Understand the business problem and rules.
+2. Convert the use case into testable requirements.
+3. Implement one architectural layer at a time.
+4. Validate and review each architectural layer before proceeding.
+5. Apply only the smallest necessary corrections.
+6. Validate the completed vertical slice against its acceptance criteria.
+
+## Overall prompt-engineering approach
+
+The central instruction used throughout the prompts was:
+
+> Treat the specification as the source of truth, constrain each AI task to a small scope, preserve previously working code, and require evidence and tests that every change works.
+
+The following infographic summarises the development flow. Solid lines show forward delivery; dashed lines represent review and remediation loops.
+
+![AI-assisted development workflow](./ai-usage-flow.jpg)
+
+The workflow applied five forms of control:
+
+| Control | How it was applied | Intended benefit |
+| --- | --- | --- |
+| Business-first analysis | Use Case 2 was analysed with the CARE framework before implementation | Aligns the solution with users, outcomes and business rules |
+| Ordered decomposition | Separate prompts were created for the domain, DAO, service, API, UI, seed data and integration stages | Reduces context mixing and uncontrolled changes |
+| Repository inspection | Every implementation prompt instructed the agent to inspect the existing repository first | Keeps new work consistent with the actual codebase |
+| Scope boundaries | Each prompt named the permitted layer and prohibited unrelated changes | Protects working behaviour and limits unnecessary refactoring |
+| Evidence-based validation | Prompts required tests, builds, commands executed and actual results | Makes completion claims observable and verifiable |
+
+## 1. Business analysis with CARE
+
+The initial prompt used the **CARE** framework to transform the use-case specification into engineering work:
+
+- **Context:** users, operational problem and desired outcome.
+- **Actions:** capabilities and workflow steps to implement.
+- **Requirements and Constraints:** business rules, technical limits and assumptions.
+- **Expected Output:** deliverables and acceptance criteria.
+
+Refer to [PROMPTS.md](./PROMPTS.md) for the full prompt text.
+
+```text
+Analyse Use Case 2 using the CARE framework:
+
+* Context: Understand the problem, users and desired outcome.
+* Actions: Identify the tasks and features to implement.
+* Requirements and Constraints: Extract the business rules,
+  technical requirements, limitations and assumptions.
+* Expected Output: Define the required deliverables and
+  acceptance criteria.
+```
+
+The same prompt asked AI to produce an ordered set of agent-mode prompts rather than application code. This separated planning from execution and created a controlled implementation sequence.
+
+## 2. Layer-by-layer implementation
+
+The application was built progressively, with each layer depending on the verified output of the preceding layer.
+
+| Stage | Primary concern | Examples of robustness introduced |
+| --- | --- | --- |
+| Domain and project setup | Represent business concepts and invariants | Controlled status transitions, immutable revisions, contextual feedback and optimistic locking |
+| DAO and data access | Persist the model correctly | Uniqueness, foreign-key relationships, indexes, ordered queries and persistence tests |
+| Transaction and service | Coordinate complete business operations | Atomic status, audit and notification changes; rollback and conflict handling |
+| Application and REST API | Provide stable external contracts | DTO isolation, request validation, consistent errors and appropriate HTTP semantics |
+| React UI | Deliver the Officer workflow | Typed API integration, accessibility and explicit loading, empty, success and failure states |
+| UI refinements | Complete the user journey | Operator view, frontend-backend connectivity and multi-application navigation |
+| Seed data and integration | Support repeatable end-to-end testing | Stable UUIDs, coherent relationships, realistic test data and API verification |
+
+### Example: domain-layer prompt
+
+The domain prompt defined both the required work and explicit exclusions:
+
+```text
+Inspect the existing repository before making any changes. Identify the
+existing files, build tools, frameworks and coding conventions. Preserve
+all existing work and do not change unrelated code.
+
+Create only the project foundation and domain model.
+
+Requirements:
+* An Application has a unique reference number.
+* Add an optimistic-lock version field to Application.
+* Revision numbers must be sequential within an application.
+* Earlier revisions must not be modified when a new revision is created.
+* Feedback must identify whether it targets a form field or document.
+* Define which MVP status transitions are allowed.
+
+Do not implement repository, service, controller or UI code yet.
+```
+
+This prompt established the core business vocabulary and kept domain rules out of controllers and screens.
+
+### Example: transaction and service-layer prompt
+
+The service prompt described business operations as atomic transactions:
+
+```text
+Requesting resubmission requires at least one open feedback item.
+Requesting resubmission changes the status to
+PENDING_PRE_SITE_RESUBMISSION.
+The status change, audit entry and Operator notification must be saved
+in one transaction.
+
+Recording a resubmission creates a new revision instead of modifying
+the previous revision.
+Every important state-changing action must create an audit entry.
+Optimistic-lock conflicts must not be silently ignored.
+```
+
+These instructions made transaction boundaries, auditability and concurrency behaviour explicit instead of leaving them for AI to infer.
+
+### Example: REST API prompt
+
+The API prompt introduced a boundary between persistence entities and external clients:
+
+```text
+Create simple request and response DTOs, manual mapper methods,
+REST controllers and a global exception handler.
+
+Do not expose JPA entities directly.
+
+* Validate required fields and comment length.
+* Return 404 when an application or feedback item is not found.
+* Return 409 for invalid status transitions and optimistic-lock conflicts.
+* Use one consistent JSON error structure.
+```
+
+This kept the API contract stable and prevented persistence concerns from leaking into the frontend.
+
+### Example: React UI prompt
+
+The frontend prompt required the UI to use the backend contract without duplicating authoritative business rules:
+
+```text
+Keep REST calls in the API client rather than individual presentational
+components.
+Do not duplicate authoritative backend status-transition logic.
+Show a useful message for validation, not-found, conflict and server errors.
+For a conflict, tell the Officer that the application changed and should
+be refreshed.
+Configure the API base URL through a Vite environment variable.
+```
+
+Later CARE-based prompts addressed narrowly defined gaps, including the Operator view and navigation between multiple applications, while preserving the existing Officer workflow.
+
+## 3. Review and remediation gates
+
+AI was also used as a reviewer. Review prompts were intentionally separated from implementation prompts so that findings could be assessed before code was changed.
+
+A representative review instruction was:
+
+```text
+Provide a focused code and design review covering:
+
+* Whether the implementation correctly and completely satisfies the use case
+* Missing, misunderstood, or incorrectly implemented requirements
+* Domain-model and data-access design issues
+* Data integrity, validation, transaction, concurrency, security,
+  and error-handling concerns
+* Unnecessary complexity, duplication, or premature abstractions
+* Test coverage gaps and important edge cases
+
+Prioritise findings by severity: Critical, High, Medium, and Low.
+Do not modify any files or generate code.
+```
+
+Findings were then assigned to the architectural layer that owned the concern. Only critical or high-priority gaps that needed attention at the current stage were corrected before work continued. Remediation prompts requested minimal, incremental changes instead of broad rewrites.
+
+This produced two main feedback loops:
+
+1. **Architecture and code review** after the domain and DAO foundation.
+2. **API and DTO review** after the service and REST API layers.
+
+The final validation loop identified the owning layer of any failed acceptance criterion and requested the smallest correction before tests were rerun.
+
+## 4. Continuous validation
+
+Every implementation prompt requested relevant positive, negative and edge-case tests. The expected completion report consistently included:
+
+- Repository structure or existing layers inspected.
+- Assumptions made.
+- Files created or modified.
+- Functionality implemented.
+- Tests added.
+- Commands executed and their actual results.
+- Known limitations or deferred work.
+
+Validation was tailored to each layer:
+
+| Layer | Representative validation |
+| --- | --- |
+| Domain | Allowed and rejected status transitions, status labels and domain validation |
+| DAO | Constraints, ordered queries, open-feedback lookup and optimistic locking |
+| Service | Rollback, audit and notification creation, immutable revisions and repeated workflow rounds |
+| API | MockMvc tests for validation, `404`, `409`, comparison, feedback and history endpoints |
+| UI | Component tests, type checking, accessibility behaviours and production build |
+| Integration | Backend clean build, all tests, frontend build and local API smoke test where possible |
+
+The final integration prompt required AI to verify the complete vertical slice without adding new product features:
+
+```text
+Integrate and verify the complete Use Case 2 vertical slice.
+
+Do not add new product features and do not refactor unrelated code.
+
+Run:
+* Backend clean build
+* All backend tests
+* Frontend type checking
+* All frontend tests
+* Frontend production build
+* A local API smoke test if the environment permits it
+
+Fix only failures related to the implemented scope.
+```
+
+## 5. Guardrails used across the prompts
+
+The following instructions were repeated because they materially influenced AI output:
+
+- Inspect the repository before making changes.
+- Build on the output of the previous prompt.
+- Change only the specified layer or narrowly defined problem.
+- Preserve existing conventions and working behaviour.
+- Avoid unnecessary frameworks, abstractions and dependencies.
+- Add focused tests and run them.
+- Report commands and actual results rather than claiming success without evidence.
+- State assumptions, limitations and deferred work.
+
+The prompts also constrained technology choices. For example, the frontend prompt permitted React, TypeScript, Vite, native `fetch`, Vitest and plain CSS, while explicitly excluding Redux, Axios, Tailwind and large component libraries. Similar exclusions kept the backend appropriate for a three-day assessment.
+
+## 6. Human oversight and accountability
+
+AI proposed implementation details and design patterns, but the development process remained human-directed. Human judgement determined:
+
+- The selection of Use Case 2 based on business value, feasibility and complexity.
+- The order and scope of each prompt.
+- Which AI recommendations were appropriate for the three-day delivery constraint.
+- Which review findings were important enough to address immediately.
+- Whether a correction belonged in the current layer or a later layer.
+- Whether test evidence and application behaviour satisfied the acceptance criteria.
+
+This distinction is important: AI accelerated analysis, code generation and review, while responsibility for requirements, trade-offs, verification and final acceptance remained with the engineer.
+
+## 7. Resulting development pattern
+
+The overall pattern can be summarised as:
+
+```text
+Understand -> Constrain -> Implement -> Test -> Review -> Correct -> Integrate
+```
+
+The main strength of this prompt-engineering approach was not prompt length but the deliberate control of AI behaviour: **inspect first, implement narrowly, verify objectively, disclose assumptions and correct only what the evidence shows is necessary**.
+
+# What I should do next
+
+I would not describe the resulting assessment application as production-ready. There are still workflows that are partially implemented, and the current architecture is not yet hardened for production.
+
+Before production, 
+1) I would implement the following which provides an incremental path to production without discarding the assessment solution or prematurely introducing distributed-system complexity. 
+   1.1) Migrate to PostgreSQL and Flyway
+   1.2) Strengthen security and audit controls
+   1.3) Validate concurrency and immutable revision handling
+   1.4) Implement durable document storage and activate reliable notification-outbox processing. 
+   1.5) Real integrations, asynchronous messaging, 
+   1.6) Kubernetes or microservices would be introduced only when operational requirements justify them.
+2) Fully implement partially implemented workflows of Use Case 2
+3) Fully implement Use Case 1 followed by Use Case 3 in this order, with careful attention to mobile and offline requirements.
