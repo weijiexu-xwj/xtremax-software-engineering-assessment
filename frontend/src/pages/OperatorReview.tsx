@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { getApplicationReview } from '../api/client'
+import { getApplicationReview, submitOperatorResubmission } from '../api/client'
 import { ApplicationReviewDTO } from '../types'
 import { getOperatorStatusLabel } from '../statusLabels'
 
@@ -18,11 +18,20 @@ export default function OperatorReview({ appId }: { appId: string }){
   const [data, setData] = useState<ApplicationReviewDTO | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [draftFields, setDraftFields] = useState<Record<string, string>>({})
+  const [submissionError, setSubmissionError] = useState<string | null>(null)
+  const [submissionSuccess, setSubmissionSuccess] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(()=>{ void load() }, [appId])
 
+  useEffect(() => {
+    if (!data?.latestRevision?.fields) return
+    setDraftFields(Object.fromEntries(data.latestRevision.fields.map(field => [field.key, field.value])))
+  }, [data?.id, data?.latestRevision?.revisionNumber])
+
   async function load(){
-    setLoading(true); setError(null)
+    setLoading(true); setError(null); setSubmissionError(null); setSubmissionSuccess(null)
     try {
       const r = await getApplicationReview(appId)
       setData({ ...r, operatorStatusLabel: r.operatorStatusLabel ?? getOperatorStatusLabel(r.officerStatusLabel) })
@@ -39,12 +48,45 @@ export default function OperatorReview({ appId }: { appId: string }){
     }
   }
 
+  async function handleSubmitResubmission(){
+    const emptyFields = Object.entries(draftFields)
+      .filter(([, value]) => !value || !value.trim())
+      .map(([key]) => key)
+
+    if (emptyFields.length > 0) {
+      setSubmissionError(`Please complete the following fields before submitting: ${emptyFields.join(', ')}`)
+      return
+    }
+    setIsSubmitting(true)
+    setSubmissionError(null)
+    setSubmissionSuccess(null)
+    try {
+      const response = await submitOperatorResubmission(appId, {
+        operatorName: 'operator',
+        fields: Object.entries(draftFields).map(([key, value]) => ({ key, value })),
+      })
+      setData({ ...response, operatorStatusLabel: response.operatorStatusLabel ?? getOperatorStatusLabel(response.officerStatusLabel) })
+      setSubmissionSuccess('Corrected information submitted successfully. The officer has been notified.')
+    } catch (e: any) {
+      if (e?.message === 'CONFLICT') {
+        setSubmissionError('This application is not eligible for resubmission.')
+      } else if (e?.message === 'NOT_FOUND') {
+        setSubmissionError('Application not found.')
+      } else {
+        setSubmissionError('Failed to submit corrected information. Please try again.')
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   if (loading) return <Loading />
   if (error) return <ErrorMessage message={error} />
   if (!data) return <div>No application loaded</div>
 
   const operatorStatus = data.operatorStatusLabel ?? getOperatorStatusLabel(data.officerStatusLabel)
   const showActionAlert = ACTION_REQUIRED_STATUSES.has(operatorStatus)
+  const canResubmit = operatorStatus === 'Pending Pre-Site Resubmission'
 
   return (
     <section>
@@ -70,6 +112,41 @@ export default function OperatorReview({ appId }: { appId: string }){
               <div>{f.value}</div>
             </div>
           ))}
+
+          {canResubmit && (
+            <div style={{ marginTop: 24, border: '1px solid #d9d9d9', borderRadius: 8, padding: 16 }}>
+              <h3>Action required</h3>
+              <div style={{ marginBottom: 12, color: '#666' }}>
+                Review the officer feedback and update the required fields before resubmission.
+              </div>
+              {data.feedback.filter(f => f.status === 'OPEN').map(item => (
+                <div key={item.id} style={{ border: '1px solid #ddd', padding: 8, marginBottom: 8 }}>
+                  <div><strong>{item.targetKey}</strong> ({item.targetType})</div>
+                  <div>{item.comment}</div>
+                </div>
+              ))}
+
+              {data.latestRevision?.fields.map(field => (
+                <div key={field.key} style={{ marginTop: 12 }}>
+                  <label htmlFor={`field-${field.key}`}><strong>{field.key}</strong></label>
+                  <textarea
+                    id={`field-${field.key}`}
+                    value={draftFields[field.key] ?? ''}
+                    onChange={e => setDraftFields(current => ({ ...current, [field.key]: e.target.value }))}
+                    rows={3}
+                    style={{ width: '100%', resize: 'vertical' }}
+                  />
+                </div>
+              ))}
+
+              <button type="button" onClick={handleSubmitResubmission} disabled={isSubmitting} style={{ marginTop: 12 }}>
+                {isSubmitting ? 'Submitting...' : 'Submit corrected information'}
+              </button>
+
+              {submissionError && <div role="alert" style={{ color: 'crimson', marginTop: 12 }}>{submissionError}</div>}
+              {submissionSuccess && <div role="status" style={{ color: 'green', marginTop: 12 }}>{submissionSuccess}</div>}
+            </div>
+          )}
 
           <h3>Documents</h3>
           {data.latestRevision?.documents.length ? data.latestRevision.documents.map(d => (

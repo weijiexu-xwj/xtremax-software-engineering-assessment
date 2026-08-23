@@ -27,6 +27,8 @@ export async function compareRevisions(applicationId: string, from:number, to:nu
 }
 
 export type CreateFeedbackRequest = { targetType: string; targetKey: string; comment: string; officerName?: string; revisionId?: string }
+export type OperatorResubmissionField = { key: string; value: string }
+export type OperatorResubmissionRequest = { operatorName?: string; fields: OperatorResubmissionField[] }
 
 export async function createFeedback(applicationId: string, payload: CreateFeedbackRequest): Promise<FeedbackDTO>{
   const res = await fetch(`${API_BASE}/applications/${applicationId}/feedback`, { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } })
@@ -38,6 +40,13 @@ export async function createFeedback(applicationId: string, payload: CreateFeedb
 
 export async function requestInformation(applicationId: string, officerName?: string): Promise<ApplicationReviewDTO>{
   return fetchJson<ApplicationReviewDTO>(`${API_BASE}/applications/${applicationId}/request-information`, { method: 'POST', body: JSON.stringify({ officerName }) })
+}
+
+export async function submitOperatorResubmission(applicationId: string, payload: OperatorResubmissionRequest): Promise<ApplicationReviewDTO> {
+  return fetchJson<ApplicationReviewDTO>(`${API_BASE}/applications/${applicationId}/operator-resubmission`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
 }
 
 export async function listCommentTemplates(): Promise<CommentTemplateDTO[]>{
